@@ -32,7 +32,7 @@ def get_news_headlines():
 def generate_report(market_data, news):
     # הגדרת Gemini
     genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
     
     prompt = f"""
     אתה אנליסט שוק בכיר המומחה בשיטת Market Makers Method. 
