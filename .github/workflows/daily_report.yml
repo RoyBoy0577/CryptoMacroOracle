@@ -1,0 +1,30 @@
+name: Daily Macro Report
+
+on:
+  schedule:
+    # רץ כל יום ב-06:00 UTC (שזה 08:00 בבוקר בישראל, או 09:00 בשעון קיץ)
+    - cron: '0 6 * * *' 
+  workflow_dispatch: # מאפשר לנו להריץ את הבוט ידנית בכל רגע שנרצה
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run Script
+        env:
+          # כאן המערכת מושכת את המפתחות מה"כספת" שהגדרנו קודם
+          TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python main.py
