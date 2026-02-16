@@ -11,7 +11,7 @@ GEMINI_KEY = os.getenv('GEMINI_API_KEY')
 
 def get_market_data():
     tickers = {"VIX": "^VIX", "DXY": "DX-Y.NYB", "10Y_Yield": "^TNX", "BTC": "BTC-USD"}
-    summary = "נתוני שוק:\n"
+    summary = 'נתוני שוק:\n'
     for name, ticker in tickers.items():
         try:
             t = yf.Ticker(ticker)
@@ -56,20 +56,19 @@ def generate_report(market_data, news):
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    # שולחים טקסט נקי בלי שום הגדרת parse_mode - הכי בטוח שיש
     payload = {"chat_id": CHAT_ID, "text": message}
     
     try:
         response = requests.post(url, json=payload)
         if response.status_code == 200:
-            print("✅ הדו"ח נשלח בהצלחה לטלגרם!")
+            print('✅ הדו"ח נשלח בהצלחה לטלגרם!')
         else:
-            print(f"❌ שגיאה בשליחה: {response.text}")
+            print(f'❌ שגיאה בשליחה: {response.text}')
     except Exception as e:
-        print(f"❌ תקלה טכנית: {e}")
+        print(f'❌ תקלה טכנית: {e}')
 
 if __name__ == "__main__":
-    print("🚀 מריץ את ה-Oracle...")
+    print('🚀 מריץ את ה-Oracle...')
     m_data = get_market_data()
     n_data = get_news_headlines()
     report = generate_report(m_data, n_data)
