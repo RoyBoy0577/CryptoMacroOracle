@@ -4,14 +4,14 @@ from google import genai
 import requests
 import feedparser
 
-# משיכת סודות
+# משיכת סודות מהכספת של GitHub
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GEMINI_KEY = os.getenv('GEMINI_API_KEY')
 
 def get_market_data():
     tickers = {"VIX": "^VIX", "DXY": "DX-Y.NYB", "10Y_Yield": "^TNX", "BTC": "BTC-USD"}
-    summary = "📊 נתוני שוק נוכחיים:\n"
+    summary = "נתוני שוק:\n"
     for name, ticker in tickers.items():
         try:
             t = yf.Ticker(ticker)
@@ -31,12 +31,22 @@ def generate_report(market_data, news):
     client = genai.Client(api_key=GEMINI_KEY)
     
     prompt = f"""
-    אתה אנליסט שוק בכיר בשיטת Market Makers Method. 
-    נתח את הנתונים וספק סקירה פונדמנטלית קצרה לסוחר יום בביטקוין (5/15 דקות).
+    אתה אנליסט בכיר בשיטת Market Makers Method. 
+    נתח את הנתונים הבאים וכתוב סקירה קצרה לסוחר יום בביטקוין.
+    
     נתונים: {market_data}
     חדשות: {news}
-    מבנה: # המאקרו והפד, # זירה גיאופוליטית, 🚩 דגלים אדומים, 💡 בנימה אישית.
-    כתוב בעברית ממוקדת.
+    
+    הנחיות חשובות:
+    1. כתוב בטקסט פשוט בלבד (בלי כוכביות, בלי הדגשות, בלי סימני קוד).
+    2. השתמש בסימנים פשוטים כמו # או - לחלוקה.
+    3. כתוב בעברית ממוקדת, קריאה ובלי 'חפירות'.
+    
+    מבנה הדו"ח:
+    # המאקרו והפד
+    # זירה גיאופוליטית
+    # דגלים אדומים
+    # בנימה אישית
     """
     
     response = client.models.generate_content(
@@ -46,38 +56,21 @@ def generate_report(market_data, news):
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
+    # שולחים טקסט נקי בלי שום הגדרת parse_mode - הכי בטוח שיש
+    payload = {"chat_id": CHAT_ID, "text": message}
     
-    # בדיקה: האם ההודעה ריקה?
-    if not message:
-        print("❌ שגיאה: הסקירה שנוצרה ריקה!")
-        return
-
-    print(f"📡 מנסה לשלוח הודעה ל-Chat ID: {CHAT_ID}...")
-    
-    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
     try:
         response = requests.post(url, json=payload)
-        
-        # בדיקת הצלחה מול טלגרם
         if response.status_code == 200:
-            print("✅ טלגרם אישר: ההודעה נשלחה בהצלחה!")
+            print("✅ הדו"ח נשלח בהצלחה לטלגרם!")
         else:
-            print(f"❌ טלגרם החזיר שגיאה {response.status_code}: {response.text}")
+            print(f"❌ שגיאה בשליחה: {response.text}")
     except Exception as e:
-        print(f"❌ שגיאה טכנית בשליחה: {e}")
+        print(f"❌ תקלה טכנית: {e}")
 
 if __name__ == "__main__":
-    print("🚀 מתחיל הרצת Oracle...")
-    
+    print("🚀 מריץ את ה-Oracle...")
     m_data = get_market_data()
     n_data = get_news_headlines()
-    
-    print("🤖 פונה ל-Gemini ליצירת סקירה...")
     report = generate_report(m_data, n_data)
-    
-    # הדפסת הסקירה ללוגים כדי לוודא שהיא נוצרה
-    print("--- הסקירה שנוצרה: ---")
-    print(report)
-    print("----------------------")
-    
     send_telegram(report)
