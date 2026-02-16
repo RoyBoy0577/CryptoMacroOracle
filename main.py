@@ -28,7 +28,6 @@ def get_news_headlines():
     return "\n".join(headlines)
 
 def generate_report(market_data, news):
-    # שימוש בספרייה החדשה google-genai
     client = genai.Client(api_key=GEMINI_KEY)
     
     prompt = f"""
@@ -40,7 +39,6 @@ def generate_report(market_data, news):
     כתוב בעברית ממוקדת.
     """
     
-    # שימוש במודל 2.0-flash הרגיל
     response = client.models.generate_content(
         model='gemini-2.0-flash', contents=prompt
     )
@@ -48,11 +46,38 @@ def generate_report(market_data, news):
 
 def send_telegram(message):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
-    if message:
-        requests.post(url, json={"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"})
+    
+    # בדיקה: האם ההודעה ריקה?
+    if not message:
+        print("❌ שגיאה: הסקירה שנוצרה ריקה!")
+        return
+
+    print(f"📡 מנסה לשלוח הודעה ל-Chat ID: {CHAT_ID}...")
+    
+    payload = {"chat_id": CHAT_ID, "text": message, "parse_mode": "Markdown"}
+    try:
+        response = requests.post(url, json=payload)
+        
+        # בדיקת הצלחה מול טלגרם
+        if response.status_code == 200:
+            print("✅ טלגרם אישר: ההודעה נשלחה בהצלחה!")
+        else:
+            print(f"❌ טלגרם החזיר שגיאה {response.status_code}: {response.text}")
+    except Exception as e:
+        print(f"❌ שגיאה טכנית בשליחה: {e}")
 
 if __name__ == "__main__":
+    print("🚀 מתחיל הרצת Oracle...")
+    
     m_data = get_market_data()
     n_data = get_news_headlines()
+    
+    print("🤖 פונה ל-Gemini ליצירת סקירה...")
     report = generate_report(m_data, n_data)
+    
+    # הדפסת הסקירה ללוגים כדי לוודא שהיא נוצרה
+    print("--- הסקירה שנוצרה: ---")
+    print(report)
+    print("----------------------")
+    
     send_telegram(report)
