@@ -1,10 +1,10 @@
 import os
 import yfinance as yf
-import google.generativeai as genai
+from google import genai
 import requests
 import feedparser
 
-# משיכת הסודות
+# משיכת סודות
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
 GEMINI_KEY = os.getenv('GEMINI_API_KEY')
@@ -18,7 +18,7 @@ def get_market_data():
             price = t.history(period="1d")['Close'].iloc[-1]
             summary += f"- {name}: {price:.2f}\n"
         except:
-            summary += f"- {name}: תקלה במשיכה\n"
+            summary += f"- {name}: תקלה\n"
     return summary
 
 def get_news_headlines():
@@ -28,21 +28,22 @@ def get_news_headlines():
     return "\n".join(headlines)
 
 def generate_report(market_data, news):
-    genai.configure(api_key=GEMINI_KEY)
-    # שימוש במודל Lite - הכי יציב ל-Free Tier ב-2026
-    model = genai.GenerativeModel('gemini-2.0-flash-lite')
+    # שימוש בספרייה החדשה google-genai
+    client = genai.Client(api_key=GEMINI_KEY)
     
     prompt = f"""
     אתה אנליסט שוק בכיר בשיטת Market Makers Method. 
     נתח את הנתונים וספק סקירה פונדמנטלית קצרה לסוחר יום בביטקוין (5/15 דקות).
-    
     נתונים: {market_data}
     חדשות: {news}
-    
     מבנה: # המאקרו והפד, # זירה גיאופוליטית, 🚩 דגלים אדומים, 💡 בנימה אישית.
-    כתוב בעברית ממוקדת 'בלי חפירות'.
+    כתוב בעברית ממוקדת.
     """
-    response = model.generate_content(prompt)
+    
+    # שימוש במודל 2.0-flash הרגיל
+    response = client.models.generate_content(
+        model='gemini-2.0-flash', contents=prompt
+    )
     return response.text
 
 def send_telegram(message):
