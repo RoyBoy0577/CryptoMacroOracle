@@ -22,26 +22,37 @@ def get_fear_greed_index():
         return "- מדד Fear & Greed: תקלה במשיכת הסנטימנט\n"
 
 def get_market_data():
-    """מושך נתוני מאקרו, רמות נזילות וסנטימנט"""
+    """מושך נתוני מאקרו, רמות נזילות, סנטימנט ומחיר פתיחה יומית"""
     summary = 'נתוני שוק חיים:\n'
     
     # הוספת מדד הסנטימנט
     summary += get_fear_greed_index()
     
-    # נתוני BTC ורמות נזילות
+    # נתוני BTC: פתיחה יומית, מחיר נוכחי ורמות נזילות מאתמול
     try:
         btc = yf.Ticker("BTC-USD")
+        # נתונים של היום לקבלת ה-Open
+        today_data = btc.history(period="1d")
+        daily_open = today_data['Open'].iloc[0]
+        current_price = today_data['Close'].iloc[-1]
+        
+        # נתונים של יומיים לקבלת PDH/PDL של אתמול
         hist = btc.history(period="2d")
-        current_price = hist['Close'].iloc[-1]
         pdh = hist['High'].iloc[0]
         pdl = hist['Low'].iloc[0]
+        
         summary += f"- BTC נוכחי: {current_price:.2f}\n"
+        summary += f"- פתיחה יומית (Daily Open): {daily_open:.2f}\n"
         summary += f"- גבוה של אתמול (PDH): {pdh:.2f}\n"
         summary += f"- נמוך של אתמול (PDL): {pdl:.2f}\n"
+        
+        # זיהוי סטטוס ביחס לפתיחה (Premium/Discount)
+        status = "Premium (יקר)" if current_price > daily_open else "Discount (זול)"
+        summary += f"- סטטוס מחיר: {status} ביחס לפתיחה היומית\n"
     except:
         summary += "- BTC: תקלה במשיכת רמות מחיר\n"
 
-    # מדדי מאקרו
+    # מדדי מאקרו נוספים
     tickers = {"VIX": "^VIX", "DXY": "DX-Y.NYB", "10Y_Yield": "^TNX"}
     for name, ticker in tickers.items():
         try:
@@ -53,7 +64,7 @@ def get_market_data():
     return summary
 
 def get_news_headlines():
-    """מושך חדשות עומק גלובליות"""
+    """מושך חדשות עומק גלובליות ופוליטיות"""
     feeds = [
         "https://www.reutersagency.com/feed/?best-topics=political-general&format=xml",
         "https://search.cnbc.com/rs/search/combinedcms/view.xml?partnerId=wrss01&id=15839135"
@@ -62,15 +73,15 @@ def get_news_headlines():
     for url in feeds:
         try:
             feed = feedparser.parse(url)
-            for entry in feed.entries[:8]:
-                summary_text = entry.summary[:150] if 'summary' in entry else ""
+            for entry in feed.entries[:10]:
+                summary_text = entry.summary[:200] if 'summary' in entry else ""
                 all_headlines.append(f"TITLE: {entry.title}\nCONTEXT: {summary_text}")
         except:
             continue
     return "\n\n".join(all_headlines)
 
 def generate_report(market_data, news):
-    """יוצר סקירה בשיטת MMM עם דגש על Killzones וניעורים"""
+    """יוצר סקירה בשיטת MMM עם דגש על Killzones, נזילות ואירועי קלנדר קרובים"""
     client = genai.Client(api_key=GEMINI_KEY)
     today = datetime.now().strftime('%d/%m/%Y %H:%M')
     
@@ -78,27 +89,27 @@ def generate_report(market_data, news):
     אתה אנליסט מאקרו בכיר וסוחר מומחה בשיטת Market Makers Method (MMM). 
     זמן הדו"ח: {today}. 
     
-    נתונים: {market_data}
-    חדשות: {news}
+    נתוני שוק וסנטימנט: {market_data}
+    חדשות עומק: {news}
     
-    הנחיות לכתיבה (סגנון המאסטר):
-    1. התייחס לזמן הדו"ח - אם אנחנו לפני לונדון או ניו-יורק (Killzones), חפש סימנים ל-Judas Swing או תנועות הטעיה.
-    2. השתמש בביטויים: 'הסלמות יזומות', 'ניעורים בשווקים', 'הכסף הטיפש ניזון מכותרות', 'צייד נזילות מתחת ל-PDL', ו'אינטרס מובהק'.
-    3. נתח את מדד ה-Fear & Greed - האם יש אופוריה מסוכנת או פחד שהמרקט מייקרס ינצלו?
-    4. הסבר תמיד את ה'למה' מאחורי המהלכים הגיאופוליטיים של הדוד סם או הבנקים המרכזיים.
+    הנחיות קריטיות לניתוח (סגנון המאסטר):
+    1. **התראת קלנדר:** סרוק את החדשות וחפש אירועים כלכליים גדולים בטווח של השבועיים הקרובים (החלטות ריבית, CPI, נאומים של הפד). התרע עליהם והסבר איך השוק יתחיל לתמחר אותם.
+    2. **ניתוח Daily Open:** השתמש בנתון ה-Daily Open. אם אנחנו ב-Premium, חפש סימנים להפצה. אם ב-Discount, חפש איסוף מתחת לפתיחה.
+    3. **Killzone ו-Judas Swing:** זהה אפשרות לתנועת הטעיה (Judas Swing) שפורצת את ה-Daily Open או את ה-PDH/PDL רק כדי לצוד נזילות לפני המהלך האמיתי.
+    4. **מושגי מפתח:** השתמש בביטויים 'הסלמות יזומות', 'ניעורים בשווקים', 'הכסף הטיפש', 'נזילות מתחת ל-PDL', ו'אינטרס מובהק של הדוד סם'.
     
     פורמט (טקסט פשוט בלבד):
-    # [כותרת דעתנית על המצב ב-Killzone הנוכחי]
+    # [כותרת דעתנית על הנרטיב הנוכחי וה-Killzone]
     (ניתוח עומק של האינטרסים והנרטיב)
     
-    # זירה גיאופוליטית והסלמות יזומות
-    (ניתוח מהלכי כוח עולמיים והשפעתם על הסנטימנט)
+    # 📅 התראת אירועי מאקרו (שבועיים קרובים)
+    (פירוט אירועים קלנדריים משמעותיים וצפי לתמחור שוק)
     
-    # ניתוח סנטימנט ונזילות (MMM)
-    (ניתוח Fear & Greed ביחס לרמות PDH/PDL)
+    # ניתוח סנטימנט, פתיחה יומית ונזילות
+    (ניתוח Fear & Greed ביחס ל-Daily Open ולרמות PDH/PDL)
     
     # בשורה התחתונה ונקודות עניין על הגרף
-    (איפה ה-Liquidity? מה המרקט מייקרס מתכננים לנו ב-Killzone הקרוב?)
+    (איפה הנזילות? מה המרקט מייקרס מתכננים לנו? רמות עניין למסחר היום)
     
     בלי כוכביות, בלי הדגשות. השתמש רק ב-# לכותרות.
     """
@@ -114,14 +125,14 @@ def send_telegram(message):
     try:
         response = requests.post(url, json=payload)
         if response.status_code == 200:
-            print('✅ הדו"ח הסופי נשלח בהצלחה!')
+            print('✅ הדו"ח המאופטם (Master Edition) נשלח בהצלחה!')
         else:
             print(f'❌ שגיאה בשליחה: {response.text}')
     except Exception as e:
         print(f'❌ תקלה טכנית: {e}')
 
 if __name__ == "__main__":
-    print('🚀 Oracle 2.0 (Killzone Edition) מתחיל...')
+    print('🚀 Oracle 2.0 (Master Edition) יוצא לדרך...')
     m_data = get_market_data()
     n_data = get_news_headlines()
     report = generate_report(m_data, n_data)
