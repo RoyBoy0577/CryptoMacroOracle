@@ -1,20 +1,28 @@
-name: Daily Macro Report
+name: Daily Macro & Killzone Report
 on:
   schedule:
-    - cron: '0 6 * * *'
-  workflow_dispatch:
+    # ריצה ראשונה: 08:30 שעון ישראל (לפני פתיחת לונדון)
+    # ריצה שנייה: 14:30 שעון ישראל (לפני פתיחת ניו יורק)
+    - cron: '30 6,12 * * *'
+  workflow_dispatch: # מאפשר הרצה ידנית בכל רגע
+
 jobs:
   run-bot:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4 # שדרוג לגרסה v4
+
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # שדרוג לגרסה v5
         with:
-          python-version: '3.11' # גרסה נתמכת ל-2026
+          python-version: '3.11'
+
       - name: Install Dependencies
-        run: pip install -r requirements.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
       - name: Run Script
         env:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
